@@ -1,0 +1,58 @@
+--08_09_26
+--início: 08:30
+-----------------------------------------------------------------
+--
+-----------------------------------------------------------------
+--
+-----------------------------------------------------------------
+--Receita mensal por filial
+SELECT
+    d.year,
+    d.month_name,
+    b.branch_code                   AS filial,
+    b.city,
+    COUNT(*)                        AS vendas,
+    SUM(f.total)::NUMERIC(12,2)     AS receita,
+    ROUND(AVG(f.total), 2)          AS ticket_medio
+FROM dw.fact_sales  f 
+JOIN dw.dim_date    d ON d.date_sk      = f.date_sk
+JOIN dw.dim_branch    b ON b.branch_sk    = f.branch_sk
+GROUP BY d.year, d.month, d.month_name, b.branch_code, b.city 
+ORDER BY d.month, filial;
+
+-----------------------------------------------------------------
+--Ranking de categorias por lucro bruto
+-----------------------------------------------------------------
+
+--Análise por segmento de cliente
+
+SELECT
+    c.customer_type             AS tipo,
+    c.gender                    AS genero, 
+    COUNT(*)                    AS vendas,
+    ROUND(AVG(f.total),2)       AS ticket_medio,
+    ROUND(AVG(f.rating),2)      AS avaliacao_media,
+    ROUND(AVG(f.quantity),2)    AS itens_medio
+FROM    dw.fact_sales f 
+JOIN    dw.dim_customer c ON c.customer_sk = f.customer_sk    
+GROUP BY c.customer_type, c.gender 
+ORDER BY tipo, genero;
+
+-----------------------------------------------------------------
+
+--Vendas por dia da semana
+
+SELECT
+    d.day_of_week                   AS dia_semana,
+    d.is_weekend                    AS fim_de_semana,
+    COUNT(*)                        AS vendas,
+    SUM(f.total)::NUMERIC(12,2)     AS receita,
+    ROUND(AVG(f.rating))            AS avaliacao_media
+FROM dw.fact_sales f 
+JOIN dw.dim_date d ON d.date_sk = f.date_sk 
+GROUP BY d.day_of_week, d.is_weekend
+ORDER BY receita DESC;
+
+-----------------------------------------------------------------
+  
+--
