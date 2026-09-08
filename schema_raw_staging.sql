@@ -1,12 +1,14 @@
+--Criando Schemas
 CREATE SCHEMA IF NOT EXISTS raw;
 CREATE SCHEMA IF NOT EXISTS staging;
 CREATE SCHEMA IF NOT EXISTS dw;
 
-SELECT schema_nema
+SELECT schema_name
 FROM information_schema.schemata;
 
-SELECT * FROM raw.sales;
+-----------------------------------------
 
+--Camada Raw (bronze)
 DROP TABLE IF EXISTS raw.sales CASCADE;
 CREATE TABLE raw.sales(
 	invoice_id TEXT,
@@ -28,6 +30,9 @@ CREATE TABLE raw.sales(
 	rating TEXT
 );
 
+-----------------------------------------
+
+--Camada Staging (silver)
 DROP TABLE IF EXISTS staging.sales;
 CREATE TABLE staging.sales(
 	invoice_id VARCHAR(200) PRIMARY KEY,
@@ -50,35 +55,37 @@ CREATE TABLE staging.sales(
 ALTER TABLE staging.sales
 ALTER COLUMN branch TYPE VARCHAR(200);
 
+SELECT * FROM staging.sales;
+
+-----------------------------------------
+
+--Carregando a tabela Staging
+INSERT INTO staging.sales(
+	invoice_id, branch, city, customer_type, 
+	gender,     product_line, payment,
+	unit_price, quantity,     tax_5pct,
+	total,      cogs,         gross_income, 
+	rating,     sale_ts
+)
 SELECT 
-	TRIM(invoice_id), --remover espaços em branco do começo e do fim
+	TRIM(invoice_id),                  				--remover espaços em branco do começo e do fim
 	UPPER(TRIM(branch)),
 	INITCAP(TRIM(city)),
 	INITCAP(TRIM(customer_type)),
 	INITCAP(TRIM(gender)),
 	INITCAP(TRIM(product_line)),
 	INITCAP(TRIM(payment)),
-	CAST(TRIM(unit_price) AS NUMERIC(10, 2)),
-	CAST(TRIM(quantity) AS INTEGER),
-	CAST(TRIM(tax_5pct) AS NUMERIC(10, 4)),
-	CAST(TRIM(total) AS NUMERIC(12, 2)),
-	CAST(TRIM(cogs) AS NUMERIC(12, 2)),
-	CAST(TRIM(gross_income) AS NUMERIC(10, 4)),
-	CAST(TRIM(rating) AS NUMERIC(4, 1)),
+	CAST(TRIM(unit_price) 			AS NUMERIC(10, 2)),
+	CAST(TRIM(quantity) 			AS INTEGER),
+	CAST(TRIM(tax_5pct) 			AS NUMERIC(10, 4)),
+	CAST(TRIM(total) 				AS NUMERIC(12, 2)),
+	CAST(TRIM(cogs) 				AS NUMERIC(12, 2)),
+	CAST(TRIM(gross_income) 		AS NUMERIC(10, 4)),
+	CAST(TRIM(rating) 				AS NUMERIC(4, 1)),
 	TO_TIMESTAMP(
 		TRIM(sale_date) || ' ' || TRIM(sale_time),
 		'MM/DD/YYYY HH24:MI'
 	)
 FROM raw.sales
 WHERE TRIM(invoice_id) <> '';
-SELECT * FROM staging.sales;
 
-SELECT * FROM staging.sales;
-
-INSERT INTO staging.sales(
-	invoice_id, branch, city, customer_type, 
-	gender, product_line, payment,
-	unit_price, quantity, tax_5pct,
-	total, cogs, gross_income, rating,
-	sale_ts
-)
